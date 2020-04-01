@@ -43,8 +43,12 @@ class ServerAppNoLogin(ServerAppException):
     response = '401 Need Login'
 
 
+class ServerAppNotRegistered(ServerAppException):
+    response = '402 Not Registered'
+
+
 class ServerAppBadCredentials(ServerAppException):
-    response = '403 Bad Login'
+    response = '403 Bad Password'
 
 
 class ServerAppNotFound(ServerAppException):
@@ -116,11 +120,16 @@ class ServerApp:
         if len(args) != 2:
             raise ServerAppBadRequest()
 
+        print(args)
+
         cursor = self.connection.cursor()
-        cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?;', args)
+        cursor.execute('SELECT password FROM users WHERE username = ?;', [args[0]])
         res = cursor.fetchone()
 
         if not res:
+            raise ServerAppNotRegistered()
+
+        if res[0] != args[1]:
             raise ServerAppBadCredentials()
 
         context.user = args[0]
