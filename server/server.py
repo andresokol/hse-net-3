@@ -29,34 +29,38 @@ def gen_result():
 
 
 class ServerAppException(Exception):
-    response = '500 Exception'
+    response = '500'
 
     def __init__(self):
         super().__init__()
 
 
 class ServerAppBadRequest(ServerAppException):
-    response = '400 Bad Request'
+    response = '400'
 
 
 class ServerAppNoLogin(ServerAppException):
-    response = '401 Need Login'
+    response = '401'
 
 
 class ServerAppNotRegistered(ServerAppException):
-    response = '402 Not Registered'
+    response = '402'
 
 
 class ServerAppBadCredentials(ServerAppException):
-    response = '403 Bad Password'
+    response = '403'
 
 
 class ServerAppNotFound(ServerAppException):
-    response = '404 Not Found'
+    response = '404'
+
+
+class ServerAppNotAllowed(ServerAppException):
+    response = '405'
 
 
 class ServerAppUnsupportedCommand(ServerAppException):
-    response = '501 Not Supported'
+    response = '501'
 
 
 class ServerContext:
@@ -109,11 +113,11 @@ class ServerApp:
             cursor.execute('INSERT INTO users VALUES (?, ?);', args)
             self.connection.commit()
         except sqlite3.Error:
-            raise ServerAppBadRequest()
+            raise ServerAppNotAllowed()
 
         context.user = args[0]
         context.is_authorized = True
-        return f'200 Welcome, {context.user}', context
+        return f'201', context
 
     def _handle_connect(self, args: tp.List[str],
                         context: ServerContext) -> tp.Tuple[str, ServerContext]:
@@ -135,7 +139,7 @@ class ServerApp:
         context.user = args[0]
         context.is_authorized = True
 
-        return '200 Welcome', context
+        return '200', context
 
     def _handle_settask(self, args: tp.List[str],
                         context: ServerContext) -> tp.Tuple[str, ServerContext]:
@@ -145,11 +149,21 @@ class ServerApp:
         if len(args) != 3:
             raise ServerAppBadRequest()
 
-        x_angle, y_angle, start_time = args[0], args[1], args[2]
-        x_angle = float(x_angle)
-        y_angle = float(y_angle)
-        start_time = dt.datetime.fromisoformat(start_time)
+        try:
+            x_angle, y_angle, start_time = args[0], args[1], args[2]
+            x_angle = float(x_angle)
+            y_angle = float(y_angle)
+            start_time = dt.datetime.fromisoformat(start_time)
+
+            assert -90.0 <= x_angle <= 90.0
+            assert -90.0 <= y_angle <= 90.0
+        except (ValueError, AssertionError):
+            raise ServerAppBadRequest()
+
         task_id = uuid.uuid4().hex[::6].upper()
+
+        if start_time < dt.datetime.now():
+            raise ServerAppNotAllowed()
 
         cursor = self.connection.cursor()
         cursor.execute('INSERT INTO tasks VALUES (?,?,?,?,?,?);',
@@ -207,7 +221,7 @@ class ServerApp:
         print(result_dt, dt.datetime.now())
         print(result_dt - dt.datetime.now())
         if result_dt > dt.datetime.now():
-            return '202 Not ready', context
+            return '202', context
 
         return f'200 {result[1]}', context
 
