@@ -1,9 +1,7 @@
+import argparse
 import asyncio
 import datetime as dt
 import sys
-
-SERVER_HOST = 'localhost'
-SERVER_PORT = 8888
 
 INPUT_PREFIX = '> '
 
@@ -146,7 +144,6 @@ class ClientApp:
 
     async def logic_loop(self):
         await self.auth_loop()
-        assert self.is_logged_in  # FIXME
 
         print('- ' * 20)
         print(f'Welcome, {self.username}!')
@@ -172,11 +169,11 @@ class ClientApp:
                 await self.task_loop(task_id)
 
 
-async def main():
-    print(F'Establishing connection with {SERVER_HOST}:{SERVER_PORT}...', end='')
+async def main(host, port):
+    print(F'Establishing connection with {host}:{port}...', end='')
     sys.stdout.flush()
     try:
-        reader, writer = await asyncio.open_connection(SERVER_HOST, SERVER_PORT)
+        reader, writer = await asyncio.open_connection(host, port)
     except OSError:
         print(' connection failed :(')
         return
@@ -188,4 +185,9 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', required=True, help='IP to bind to')
+    parser.add_argument('--port', required=True, help='port to bind to')
+    args = parser.parse_args()
+
+    asyncio.run(main(args.host, args.port))

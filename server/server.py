@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import datetime as dt
 import sqlite3
@@ -268,9 +269,9 @@ class ServerApp:
         writer.close()
 
 
-async def main():
+async def main(host, port):
     app = ServerApp()
-    server = await asyncio.start_server(app.handle_connection, SERVER_HOST, SERVER_PORT)
+    server = await asyncio.start_server(app.handle_connection, host, port)
 
     addr = server.sockets[0].getsockname()
     print(f'Serving on {addr}')
@@ -280,7 +281,12 @@ async def main():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', help='IP to bind to')
+    parser.add_argument('--port', help='port to bind to')
+    args = parser.parse_args()
+
     try:
-        asyncio.run(main())
+        asyncio.run(main(args.host or SERVER_HOST, args.port or SERVER_PORT))
     except KeyboardInterrupt:
         pass
