@@ -87,7 +87,7 @@ class ClientApp:
 
         code, response = await self.communicate(f'REGISTER {username} {password}')
 
-        if code != '200':
+        if code != '201':
             raise Exception(response)
 
         print('Registered successfully')
