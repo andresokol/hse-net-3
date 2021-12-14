@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import datetime as dt
+import socket
 import sys
 
 INPUT_PREFIX = '> '
@@ -172,10 +173,18 @@ class ClientApp:
 async def main(host, port):
     print(F'Establishing connection with {host}:{port}...', end='')
     sys.stdout.flush()
+
+    future = asyncio.wait_for(asyncio.open_connection(host, port), 10)
     try:
-        reader, writer = await asyncio.open_connection(host, port)
-    except OSError:
-        print(' connection failed :(')
+        reader, writer = await future
+    except ConnectionRefusedError as exc:
+        print(f' Error! Host "{host}" refusing connection on port {port}')
+        return
+    except socket.gaierror as exc:
+        print(f' Error! Cannot resolve host "{host}"')
+        return
+    except asyncio.exceptions.TimeoutError:
+        print(f' Error! Connection to "{host}:{port}" timed out')
         return
 
     print(' done!')
