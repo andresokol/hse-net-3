@@ -22,7 +22,14 @@ class ClientApp:
         return code, response
 
     async def draw_result(self, task_id):
-        _, response = await self.communicate(f'GETRESULT {task_id}')
+        code, response = await self.communicate(f'GETRESULT {task_id}')
+        if code == '202':
+            print('Result of the shoot is not yet ready')
+            return
+        elif code != '200':
+            print('Unresolved server error')
+            return
+
         data = response.split()[1].replace('_', ' ')
 
         print('=' * 29, f'Result of shoot {task_id}', '=' * 29)
